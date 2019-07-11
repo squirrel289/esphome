@@ -1,0 +1,184 @@
+# Wireless controller for LiftMaster Gate Operator LA400
+esphome:
+  name: ${name}
+  platform: ESP32
+  board: nodemcu-32s
+
+<<: !include .shared.yaml
+
+substitutions:
+  id_prefix: gate_
+  name: Gate
+
+esp32_ble_tracker:
+
+switch:
+- id: ${id_prefix}open_switch
+  name: "${name} Open Switch"
+  pin: 27
+  platform: gpio
+  internal: true
+  
+- id: ${id_prefix}reset_switch
+  platform: gpio
+  pin: 26
+  name: ${name} Reset Switch
+  internal: true
+  
+- id: ${id_prefix}stop_switch
+  platform: gpio
+  pin: 25
+  name: ${name} Stop Switch
+  internal: true
+  
+- id: ${id_prefix}sbc_switch
+  platform: gpio
+  pin: 24
+  name: ${name} SBC Switch
+  internal: true
+
+- id: ${id_prefix}party_mode
+  platform: template
+  name: Hold Open
+  on_turn_on:
+  - switch.turn_on: ${id_prefix}open_switch
+  - wait_until:
+      binary_sensor.is_on: ${id_prefix}open_sensor
+  - switch.turn_off: ${id_prefix}open_switch
+  - binary_sensor.template.publish: 
+      id: ${id_prefix}reset_button
+      state: ON
+  - binary_sensor.template.publish:
+      id: ${id_prefix}reset_button
+      state: OFF
+  on_turn_off:
+  - switch.turn_on: ${id_prefix}sbc_switch
+  - delay: 500ms
+  - switch.turn_off: ${id_prefix}sbc_switch
+
+binary_sensor:
+# Detect when the Odyssey bluetooth is on and within range
+- id: odyssey
+  platform: ble_presence
+  mac_address: !secret odyssey_ble
+  name: Odyssey
+  # Open the gate when the bluetooth signal is detected
+  on_press:
+  - switch.turn_on: ${id_prefix}open_switch
+  # Close the gate when the bluetooth signal is lost
+  on_release:
+  - switch.turn_off: ${id_prefix}open_switch
+
+# Detect when the M3 bluetooth is on and within range
+- id: m3
+  platform: ble_presence
+  mac_address: !secret m3_ble
+  name: M3
+  # Open the gate when the bluetooth signal is detected
+  on_press:
+  - switch.turn_on: ${id_prefix}open_switch
+  # Close the gate when the bluetooth signal is lost
+  on_release:
+  - switch.turn_off: ${id_prefix}open_switch
+
+- id: ${id_prefix}open_sensor
+  pin: 12
+  name: "${name} Open Sensor"
+  platform: gpio
+  internal: true
+  device_class: door
+
+- id: ${id_prefix}closed_sensor
+  pin: 13
+  name: "${name} Closed Sensor"
+  platform: gpio
+  internal: true
+
+# Detects if alarm is triggered
+- id: ${id_prefix}alarm_sensor
+  pin: 14
+  name: ${name} Alarm
+  platform: gpio
+  internal: true
+
+- id: ${id_prefix}reset_button
+  platform: template
+  internal: true
+  on_press:
+  - switch.turn_on: ${id_prefix}reset_switch
+  - delay: 100ms
+  - switch.turn_off: ${id_prefix}reset_switch
+
+sensor:
+- id: odyssey_rssi
+  platform: ble_rssi
+  mac_address: !secret odyssey_ble
+  internal: true
+
+- id: m3_rssi
+  platform: ble_rssi
+  mac_address: !secret m3_ble
+  internal: true
+
+# Use ADC input to determine if right gate arm is moving and in which direction
+- id: ${id_prefix}right_movement_sensor
+  platform: adc
+  pin: 33
+  update_interval: 1s
+  internal: true
+
+# Use ADC input to determine if left gate arm is moving and in which direction
+- id: ${id_prefix}left_movement_sensor
+  platform: adc
+  pin: 32
+  update_interval: 1s
+  internal: true
+
+- id: ${id_prefix}movement_sensor
+  platform: template
+  internal: true
+  lambda: |-
+    if(id(${id_prefix}left_movement_sensor).state < 1.1 ||
+      id(${id_prefix}right_movement_sensor).state < 1.1)
+      return -2;
+    else if(id(${id_prefix}left_movement_sensor).state > 1.5 ||
+      id(${id_prefix}right_movement_sensor).state > 1.5)
+      return 2;
+    else
+      return 0;
+  on_value_range:
+  - below: -1
+    then:
+    - cover.template.publish:
+      id: ${id_prefix}cover
+      current_operation: CLOSING 
+  - above: 1
+    then:
+    - cover.template.publish:
+      id: ${id_prefix}cover
+      current_operation: OPENING
+ — above: -1
+    below: 1
+    then:
+    - cover.template.publish:
+      id: ${id_prefix}cover
+      current_operation: IDLE
+cover:
+- id: ${id_prefix}cover
+  platform: template
+  name: ${name}
+  lambda: |-
+    if(id(${id_prefix}open_sensor).state) {
+      return COVER_OPEN;
+    }
+    else if(id(${id_prefix}closed_sensor).state) {
+      return COVER_CLOSED;
+    }
+    else {
+      return {};
+    }
+  optimistic: false
+  open_action:
+  - switch.turn_on: ${id_prefix}open_switch
+  close_action:
+  - switch.turn_off: ${id_prefix}open_switch
