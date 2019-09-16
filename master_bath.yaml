@@ -1,0 +1,50 @@
+esphome:
+  name: gate
+  platform: ESP32
+  board: nodemcu-32s
+
+wifi:
+  ssid: "argyle"
+  password: "C0lorBl0ck?"
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  password: "g0rmley"
+
+ota:
+  password: "g0rmley"
+
+switch:
+- platform: gpio
+  pin: 27
+  name: “Gate Open Switch”
+  internal: true
+  id: gate_open_switch
+  
+binary_sensor:
+- platform: gpio
+  pin: 12
+  name: “Gate Open Sensor”
+  id: gate_open_sensor
+  device_class: door
+
+cover:
+- platform: template
+  name: Gate
+  lambda: |-
+    if(id(gate_open_sensor).state) {
+      return COVER_CLOSED;
+    }
+    else {
+      return COVER_OPEN;
+    }
+  optimistic: true
+  open_action:
+  - switch.turn_on: gate_open_switch
+  close_action:
+  - switch.turn_off: gate_open_switch
+
+  

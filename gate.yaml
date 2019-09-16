@@ -4,38 +4,41 @@ esphome:
   platform: ESP32
   board: nodemcu-32s
 
+substitutions:
+  name: gate
+  id_prefix: ${name}_
+  name_txt: Gate
+  device_ip: 192.168.1.82
+
 <<: !include .shared.yaml
 
-substitutions:
-  id_prefix: gate_
-  name: Gate
-
 esp32_ble_tracker:
+  scan_interval: 30s
 
 switch:
-- id: ${id_prefix}open_switch
-  name: "${name} Open Switch"
-  pin: 27
-  platform: gpio
-  internal: true
-  
 - id: ${id_prefix}reset_switch
   platform: gpio
-  pin: 26
-  name: ${name} Reset Switch
-  internal: true
+  pin: 15
+  name: ${name_txt} Reset Switch
   
 - id: ${id_prefix}stop_switch
   platform: gpio
-  pin: 25
-  name: ${name} Stop Switch
-  internal: true
+  pin: 16
+  name: ${name_txt} Stop Switch
+  
+- id: ${id_prefix}open_switch
+  name: "${name_txt} Open Switch"
+  pin: 
+    number: 32
+    inverted: true
+  platform: gpio
   
 - id: ${id_prefix}sbc_switch
   platform: gpio
-  pin: 24
-  name: ${name} SBC Switch
-  internal: true
+  pin: 
+    number: 33
+    inverted: true
+  name: ${name_txt} SBC Switch
 
 - id: ${id_prefix}party_mode
   platform: template
@@ -82,22 +85,22 @@ binary_sensor:
   - switch.turn_off: ${id_prefix}open_switch
 
 - id: ${id_prefix}open_sensor
-  pin: 12
-  name: "${name} Open Sensor"
+  pin: 26
+  name: "${name_txt} Open Sensor"
   platform: gpio
   internal: true
   device_class: door
 
 - id: ${id_prefix}closed_sensor
-  pin: 13
-  name: "${name} Closed Sensor"
+  pin: 25
+  name: "${name_txt} Closed Sensor"
   platform: gpio
   internal: true
 
 # Detects if alarm is triggered
 - id: ${id_prefix}alarm_sensor
-  pin: 14
-  name: ${name} Alarm
+  pin: 4
+  name: ${name_txt} Alarm
   platform: gpio
   internal: true
 
@@ -108,6 +111,38 @@ binary_sensor:
   - switch.turn_on: ${id_prefix}reset_switch
   - delay: 100ms
   - switch.turn_off: ${id_prefix}reset_switch
+
+# Use input to determine if right gate arm is opening
+- id: ${id_prefix}right_opening_sensor
+  platform: gpio
+  pin:
+    number: 13
+#    inverted: true
+  internal: true
+
+# Use input to determine if right gate arm is closing
+- id: ${id_prefix}right_closing_sensor
+  platform: gpio
+  pin:
+    number: 12
+#    inverted: true
+  internal: true
+
+# Use input to determine if left gate arm is opening
+- id: ${id_prefix}left_opening_sensor
+  platform: gpio
+  pin:
+    number: 14
+#    inverted: true
+  internal: true
+
+# Use input to determine if left gate arm is closing
+- id: ${id_prefix}left_closing_sensor
+  platform: gpio
+  pin:
+    number: 27
+#    inverted: true
+  internal: true
 
 sensor:
 - id: odyssey_rssi
@@ -120,53 +155,67 @@ sensor:
   mac_address: !secret m3_ble
   internal: true
 
-# Use ADC input to determine if right gate arm is moving and in which direction
 - id: ${id_prefix}right_movement_sensor
-  platform: adc
-  pin: 33
-  update_interval: 1s
+  platform: template
   internal: true
+  lambda: |-
+      if ( id(${id_prefix}right_opening_sensor).state ) 
+        return 1;
+      else if ( id(${id_prefix}right_closing_sensor).state )
+        return -1;
+      else
+        return 0;
+  on_value:
+  - then:
+    - cover.template.publish:
+        id: ${id_prefix}cover
+        current_operation: !lambda |-
+          if (id(${id_prefix}right_closing_sensor).state)
+            return COVER_OPERATION_CLOSING;
+          else if (id(${id_prefix}right_opening_sensor).state)
+            return COVER_OPERATION_OPENING;
+          else
+            return COVER_OPERATION_IDLE;
 
-# Use ADC input to determine if left gate arm is moving and in which direction
 - id: ${id_prefix}left_movement_sensor
-  platform: adc
-  pin: 32
-  update_interval: 1s
+  platform: template
   internal: true
+  lambda: |-
+    if(id(${id_prefix}left_opening_sensor).state) 
+      return 1;
+    else if(id(${id_prefix}left_closing_sensor).state )
+      return -1;
+    else
+      return 0;
 
 - id: ${id_prefix}movement_sensor
   platform: template
   internal: true
   lambda: |-
-    if(id(${id_prefix}left_movement_sensor).state < 1.1 ||
-      id(${id_prefix}right_movement_sensor).state < 1.1)
-      return -2;
-    else if(id(${id_prefix}left_movement_sensor).state > 1.5 ||
-      id(${id_prefix}right_movement_sensor).state > 1.5)
-      return 2;
+    if (id(${id_prefix}left_movement_sensor).state +
+      id(${id_prefix}right_movement_sensor).state < 0)
+      return -1;
+    else if (id(${id_prefix}left_movement_sensor).state + 
+      id(${id_prefix}right_movement_sensor).state > 0)
+      return 1;
     else
       return 0;
-  on_value_range:
-  - below: -1
-    then:
+  on_value:
+  - then:
     - cover.template.publish:
-      id: ${id_prefix}cover
-      current_operation: CLOSING 
-  - above: 1
-    then:
-    - cover.template.publish:
-      id: ${id_prefix}cover
-      current_operation: OPENING
- — above: -1
-    below: 1
-    then:
-    - cover.template.publish:
-      id: ${id_prefix}cover
-      current_operation: IDLE
+        id: ${id_prefix}cover
+        current_operation: !lambda |-
+          if (x < 0)
+            return COVER_OPERATION_CLOSING;
+          else if (x > 0)
+            return COVER_OPERATION_OPENING;
+          else
+            return COVER_OPERATION_IDLE;
+
 cover:
 - id: ${id_prefix}cover
   platform: template
-  name: ${name}
+  name: ${name_txt}
   lambda: |-
     if(id(${id_prefix}open_sensor).state) {
       return COVER_OPEN;
