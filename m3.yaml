@@ -1,0 +1,24 @@
+substitutions:
+  name: m3
+  id_prefix: ${name}_
+  name_txt: BMW M3
+  device_ip: 192.168.1.89
+
+esphome:
+  name: ${name}
+  platform: ESP32
+  board: nodemcu-32s
+  includes:
+  - _BLEDevice.h
+  on_boot:
+    priority: -800
+    then:
+    - lambda: |-
+            BLEDevice::setPower(ESP_PWR_LVL_P9);
+
+<<: !include .shared.yaml
+
+# Example configuration entry
+esp32_ble_beacon:
+  type: iBeacon
+  uuid: '142649e6-9b8f-94f0-df7c-c93dc496470c'

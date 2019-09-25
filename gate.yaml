@@ -3,6 +3,13 @@ esphome:
   name: ${name}
   platform: ESP32
   board: nodemcu-32s
+  includes:
+  - _BLEDevice.h
+  on_boot:
+    priority: -800
+    then:
+    - lambda: |-
+            BLEDevice::setPower(ESP_PWR_LVL_P9);
 
 substitutions:
   name: gate
@@ -226,7 +233,7 @@ cover:
     else {
       return {};
     }
-  optimistic: false
+  optimistic: true
   open_action:
   - switch.turn_on: ${id_prefix}open_switch
   close_action:
