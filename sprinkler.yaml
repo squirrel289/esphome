@@ -1,0 +1,187 @@
+substitutions:
+  name: sprinkler
+  id_prefix: ${name}_
+  name_txt: Sprinkler
+  device_ip: 192.168.1.81
+
+esphome:
+  name: ${name}
+  platform: ESP32
+  board: nodemcu-32s
+
+<<: !include .shared.yaml
+
+text_sensor:
+  - platform: version
+    name: version
+
+time:
+- platform: homeassistant
+  id: homeassistant_time
+  on_time:
+  # Every morning on weekdays
+  - seconds: 0
+    minutes: 0
+    hours: 0
+    days_of_week: MON,WED,FRI
+    then:
+    - switch.turn_on: zone01t
+
+switch:
+- platform: template
+  id: zone01t
+  name: Zone 01 Timer
+  turn_on_action:
+  - switch.template.publish:
+      id: zone01t
+      state: ON
+  - switch.turn_on: zone01
+  - delay: 10s
+  - switch.turn_off: zone01
+  - switch.template.publish:
+      id: zone01t
+      state: OFF
+  - switch.turn_on: zone02t
+- platform: template
+  id: zone02t
+  name: Zone 02 Timer
+  turn_on_action:
+  - switch.template.publish:
+      id: zone02t
+      state: ON
+  - switch.turn_on: zone02
+  - delay: 10s
+  - switch.turn_off: zone02
+  - switch.template.publish:
+      id: zone02t
+      state: OFF
+#  - switch.turn_on: zone03t
+
+- platform: gpio
+  id: zone01
+  name: Zone 01
+  interlock: &interlock_group [zone01, zone02, zone03, zone04, zone05, zone06, zone07, zone08, zone09, zone10, zone11, zone12, zone13, zone14, zone15, zone16]
+  pin:
+    number: 12
+    inverted: true
+    mode: OUTPUT
+- platform: gpio
+  id: zone02
+  name: Zone 02
+  interlock: *interlock_group
+  pin:
+    number: 13
+    inverted: true
+    mode: OUTPUT
+- platform: gpio
+  id: zone03
+  name: Zone 03
+  interlock: *interlock_group
+  pin:
+    number: 14
+    inverted: true
+    mode: OUTPUT
+- platform: gpio
+  id: zone04
+  name: Zone 04
+  interlock: *interlock_group
+  pin:
+    number: 15
+    inverted: true
+    mode: OUTPUT
+- platform: gpio
+  id: zone05
+  name: Zone 05
+  interlock: *interlock_group
+  pin:
+    number: 16
+    inverted: true
+    mode: OUTPUT
+- platform: gpio
+  id: zone06
+  name: Zone 06
+  interlock: *interlock_group
+  pin:
+    number: 17
+    inverted: true
+    mode: OUTPUT
+- platform: gpio
+  id: zone07
+  name: Zone 07
+  interlock: *interlock_group
+  pin:
+    number: 18
+    inverted: true
+    mode: OUTPUT
+- platform: gpio
+  id: zone08
+  name: Zone 08
+  interlock: *interlock_group
+  pin:
+    number: 19
+    inverted: true
+    mode: OUTPUT
+- platform: gpio
+  id: zone09
+  name: Zone 09
+  interlock: *interlock_group
+  pin:
+    number: 21
+    inverted: true
+    mode: OUTPUT
+- platform: gpio
+  id: zone10
+  name: Zone 10
+  interlock: *interlock_group
+  pin:
+    number: 22
+    inverted: true
+    mode: OUTPUT
+- platform: gpio
+  id: zone11
+  name: Zone 11
+  interlock: *interlock_group
+  pin:
+    number: 23
+    inverted: true
+    mode: OUTPUT
+- platform: gpio
+  id: zone12
+  name: Zone 12
+  interlock: *interlock_group
+  pin:
+    number: 25
+    inverted: true
+    mode: OUTPUT
+- platform: gpio
+  id: zone13
+  name: Zone 13
+  interlock: *interlock_group
+  pin:
+    number: 26
+    inverted: true
+    mode: OUTPUT
+- platform: gpio
+  id: zone14
+  name: Zone 14
+  interlock: *interlock_group
+  pin:
+    number: 27
+    inverted: true
+    mode: OUTPUT
+- platform: gpio
+  id: zone15
+  name: Zone 15
+  interlock: *interlock_group
+  pin:
+    number: 32
+    inverted: true
+    mode: OUTPUT
+- platform: gpio
+  id: zone16
+  name: Zone 16
+  interlock: *interlock_group
+  pin:
+    number: 33
+    inverted: true
+    mode: OUTPUT
