@@ -1,8 +1,8 @@
 substitutions:
-  name: m3
+  name: odyssey
   id_prefix: ${name}_
-  name_txt: BMW M3
-  device_ip: 192.168.1.89
+  name_txt: Honda Odyssey
+  device_ip: 192.168.1.88
 
 esphome:
   name: ${name}
@@ -21,4 +21,4 @@ esphome:
 # Example configuration entry
 esp32_ble_beacon:
   type: iBeacon
-  uuid: !secret m3_uuid
+  uuid: !secret odyssey_uuid

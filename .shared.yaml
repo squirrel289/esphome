@@ -16,3 +16,7 @@ api:
 
 ota:
   password: !secret ota_password
+
+text_sensor:
+  - platform: version
+    name: version

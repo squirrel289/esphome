@@ -23,27 +23,31 @@ esp32_ble_tracker:
   scan_interval: 30s
 
 switch:
-- id: ${id_prefix}reset_switch
+- id: ${id_prefix}reset
   platform: gpio
-  pin: 15
-  name: ${name_txt} Reset Switch
-  
-- id: ${id_prefix}stop_switch
-  platform: gpio
-  pin: 16
-  name: ${name_txt} Stop Switch
-  
-- id: ${id_prefix}open_switch
-  name: "${name_txt} Open Switch"
   pin: 
     number: 32
     inverted: true
+  name: ${name_txt} Reset Switch
+  
+- id: ${id_prefix}stop
+  platform: gpio
+  pin:
+    number: 33
+    inverted: true
+  name: ${name_txt} Stop Switch
+  
+- id: ${id_prefix}open
+  name: "${name_txt} Open Switch"
+  pin: 
+    number: 15
+    inverted: true
   platform: gpio
   
-- id: ${id_prefix}sbc_switch
+- id: ${id_prefix}sbc
   platform: gpio
   pin: 
-    number: 33
+    number: 16
     inverted: true
   name: ${name_txt} SBC Switch
 
@@ -51,10 +55,10 @@ switch:
   platform: template
   name: Hold Open
   on_turn_on:
-  - switch.turn_on: ${id_prefix}open_switch
+  - switch.turn_on: ${id_prefix}open
   - wait_until:
       binary_sensor.is_on: ${id_prefix}open_sensor
-  - switch.turn_off: ${id_prefix}open_switch
+  - switch.turn_off: ${id_prefix}open
   - binary_sensor.template.publish: 
       id: ${id_prefix}reset_button
       state: ON
@@ -62,9 +66,9 @@ switch:
       id: ${id_prefix}reset_button
       state: OFF
   on_turn_off:
-  - switch.turn_on: ${id_prefix}sbc_switch
+  - switch.turn_on: ${id_prefix}sbc
   - delay: 500ms
-  - switch.turn_off: ${id_prefix}sbc_switch
+  - switch.turn_off: ${id_prefix}sbc
 
 binary_sensor:
 # Detect when the Odyssey bluetooth is on and within range
@@ -74,10 +78,10 @@ binary_sensor:
   name: Odyssey
   # Open the gate when the bluetooth signal is detected
   on_press:
-  - switch.turn_on: ${id_prefix}open_switch
+  - switch.turn_on: ${id_prefix}open
   # Close the gate when the bluetooth signal is lost
   on_release:
-  - switch.turn_off: ${id_prefix}open_switch
+  - switch.turn_off: ${id_prefix}open
 
 # Detect when the M3 bluetooth is on and within range
 - id: m3
@@ -86,10 +90,10 @@ binary_sensor:
   name: M3
   # Open the gate when the bluetooth signal is detected
   on_press:
-  - switch.turn_on: ${id_prefix}open_switch
+  - switch.turn_on: ${id_prefix}open
   # Close the gate when the bluetooth signal is lost
   on_release:
-  - switch.turn_off: ${id_prefix}open_switch
+  - switch.turn_off: ${id_prefix}open
 
 - id: ${id_prefix}open_sensor
   pin: 26
@@ -115,9 +119,9 @@ binary_sensor:
   platform: template
   internal: true
   on_press:
-  - switch.turn_on: ${id_prefix}reset_switch
+  - switch.turn_on: ${id_prefix}reset
   - delay: 100ms
-  - switch.turn_off: ${id_prefix}reset_switch
+  - switch.turn_off: ${id_prefix}reset
 
 # Use input to determine if right gate arm is opening
 - id: ${id_prefix}right_opening_sensor
@@ -161,6 +165,10 @@ sensor:
   platform: ble_rssi
   mac_address: !secret m3_ble
   internal: true
+
+- id: gate_position
+  platform: esp32_hall
+  update_interval: 5s
 
 - id: ${id_prefix}right_movement_sensor
   platform: template
@@ -235,6 +243,6 @@ cover:
     }
   optimistic: true
   open_action:
-  - switch.turn_on: ${id_prefix}open_switch
+  - switch.turn_on: ${id_prefix}open
   close_action:
-  - switch.turn_off: ${id_prefix}open_switch
+  - switch.turn_off: ${id_prefix}open

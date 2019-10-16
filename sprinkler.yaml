@@ -11,10 +11,6 @@ esphome:
 
 <<: !include .shared.yaml
 
-text_sensor:
-  - platform: version
-    name: version
-
 time:
 - platform: homeassistant
   id: homeassistant_time
@@ -185,3 +181,8 @@ switch:
     number: 33
     inverted: true
     mode: OUTPUT
+
+sensor:
+- id: _position
+  platform: esp32_hall
+  update_interval: 1s

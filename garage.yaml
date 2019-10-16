@@ -1,50 +1,91 @@
-esphome:
+substitutions:
   name: garage
-  platform: ESP8266
-  board: nodemcu
+  id_prefix: ${name}_
+  label: Garage
+  device_ip: 192.168.1.81
 
-wifi:
-  ssid: "argyle"
-  password: "C0lorBl0ck?"
+esphome:
+  name: ${name}
+  platform: ESP32
+  board: nodemcu-32s
+  includes:
+  - _BLEDevice.h
+  on_boot:
+    priority: -800
+    then:
+    - lambda: |-
+            BLEDevice::setPower(ESP_PWR_LVL_P9);
 
-# Enable logging
-logger:
+<<: !include .shared.yaml
 
-# Enable Home Assistant API
-api:
-  password: "g0rmley"
+esp32_ble_tracker:
+  scan_interval: 30s
 
-ota:
-  password: "g0rmley"
+binary_sensor:
+- id: open_sensor
+  platform: template
+  lambda: |-
+    if(id(us_sensor).state < 0.2) {
+      return true;
+    }
+    else { 
+      return false;
+    }
+
+# Detect when the M3 bluetooth is on and within range
+- id: m3
+  platform: ble_presence
+  mac_address: !secret m3_ble
+  name: M3
+  # Open the garage when the bluetooth signal is detected
+  #  on_press:
+  #  - cover.open: ${id_prefix}cover
+  # Close the garage when the bluetooth signal is lost
+  #  on_release:
+  #  - delay: 30s
+  #  - cover.close: ${id_prefix}cover
 
 switch:
 - platform: gpio
   pin: 15
-  name: “Garage Open Switch”
+  id: open_switch
+
+sensor:
+- id: us_sensor
+  platform: ultrasonic
+  trigger_pin: 12
+  echo_pin: 13
+  update_interval: 2s
+
+- id: m3_rssi
+  platform: ble_rssi
+  mac_address: !secret m3_ble
   internal: true
-  id: garage_open_switch
-  
-binary_sensor:
-- platform: gpio
-  pin: 12
-  name: “Garage Open Sensor”
-  id: garage_open_sensor
-  device_class: garage_door
 
 cover:
-- platform: template
-  name: Garage
+- id: ${id_prefix}cover
+  platform: template
+  name: ${label}
   lambda: |-
-    if(id(garage_open_sensor).state) {
-      return COVER_CLOSED;
-    }
-    else {
+    if(id(open_sensor).state) {
       return COVER_OPEN;
     }
-  optimistic: true
+    else { 
+      return COVER_CLOSED;
+    }
   open_action:
-  - switch.turn_on: garage_open_switch
+  - if:
+      condition:
+        binary_sensor.is_off: open_sensor
+      then: 
+      - switch.turn_on: open_switch
+      - delay: 2s
+      - switch.turn_off: open_switch
   close_action:
-  - switch.turn_off: garage_open_switch
-
-  
+  - if:
+      condition:
+        binary_sensor.is_on: open_sensor
+      then: 
+      - switch.turn_on: open_switch
+      - delay: 2s
+      - switch.turn_off: open_switch
