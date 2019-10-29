@@ -19,4 +19,5 @@ ota:
 
 text_sensor:
   - platform: version
-    name: version
+    id: ${id_prefix}version
+    name: ${label} version

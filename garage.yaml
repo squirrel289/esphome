@@ -22,21 +22,19 @@ esp32_ble_tracker:
   scan_interval: 30s
 
 binary_sensor:
-- id: open_sensor
-  platform: template
-  lambda: |-
-    if(id(us_sensor).state < 0.2) {
-      return true;
-    }
-    else { 
-      return false;
-    }
-
+- platform: gpio
+  pin: 
+    number: 22
+  id: open_sensor
+- platform: gpio
+  pin: 
+    number: 23
+  id: closed_sensor
 # Detect when the M3 bluetooth is on and within range
-- id: m3
+- id: ${id_prefix}m3_ble_presence
   platform: ble_presence
   mac_address: !secret m3_ble
-  name: M3
+  name: ${label} M3 BLE Presence
   # Open the garage when the bluetooth signal is detected
   #  on_press:
   #  - cover.open: ${id_prefix}cover
@@ -44,6 +42,15 @@ binary_sensor:
   #  on_release:
   #  - delay: 30s
   #  - cover.close: ${id_prefix}cover
+#- id: open_sensor
+#  platform: template
+#  lambda: |-
+#    if(id(us_sensor).state < 0.2) {
+#      return true;
+#    }
+#    else { 
+#      return false;
+#    }
 
 switch:
 - platform: gpio
@@ -51,16 +58,15 @@ switch:
   id: open_switch
 
 sensor:
-- id: us_sensor
-  platform: ultrasonic
-  trigger_pin: 12
-  echo_pin: 13
-  update_interval: 2s
-
 - id: m3_rssi
   platform: ble_rssi
   mac_address: !secret m3_ble
   internal: true
+#- id: us_sensor
+#  platform: ultrasonic
+#  trigger_pin: 14
+#  echo_pin: 13
+#  update_interval: 2s
 
 cover:
 - id: ${id_prefix}cover
@@ -76,10 +82,10 @@ cover:
   open_action:
   - if:
       condition:
-        binary_sensor.is_off: open_sensor
+        binary_sensor.is_on: closed_sensor
       then: 
       - switch.turn_on: open_switch
-      - delay: 2s
+      - delay: 20ms
       - switch.turn_off: open_switch
   close_action:
   - if:
@@ -87,5 +93,9 @@ cover:
         binary_sensor.is_on: open_sensor
       then: 
       - switch.turn_on: open_switch
-      - delay: 2s
+      - delay: 20ms
       - switch.turn_off: open_switch
+  stop_action:
+  - switch.turn_on: open_switch
+  - delay: 20ms
+  - switch.turn_off: open_switch
