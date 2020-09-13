@@ -1,0 +1,6 @@
+substitutions:
+  name: miles_room_chandelier
+  label: Miles's Room Chandelier
+  id_prefix: ${name}_
+
+<<: !include feit_dimmer_template.yaml

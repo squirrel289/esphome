@@ -1,0 +1,6 @@
+substitutions:
+  name: third_floor_chandelier
+  label: Third Floor Chandelier
+  id_prefix: ${name}_
+
+<<: !include feit_dimmer_template.yaml

@@ -1,0 +1,6 @@
+substitutions:
+  name: boys_room_chandelier
+  label: Boys' Room Chandelier
+  id_prefix: ${name}_
+
+<<: !include feit_dimmer_template.yaml

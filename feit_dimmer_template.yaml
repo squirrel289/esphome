@@ -1,0 +1,28 @@
+esphome:
+  name: ${name}
+  platform: ESP8266
+  board: esp8285
+
+<<: !include .shared.yaml
+
+logger:
+  baud_rate: 0
+  level: NONE
+
+# My dimmer used the hardware serial port on the alternate pins
+uart:
+  rx_pin: GPIO3
+  tx_pin: GPIO1
+  baud_rate: 9600
+
+# Register the Tuya MCU connection
+tuya:
+
+# Make the light
+light:
+  - platform: "tuya"
+    name: ${name}
+    dimmer_datapoint: 2
+    switch_datapoint: 1
+    min_value: 10
+    max_value: 1000

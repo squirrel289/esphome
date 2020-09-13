@@ -1,0 +1,6 @@
+substitutions:
+  name: second_floor_landing_sconce
+  label: Second Floor Landing Sconce
+  id_prefix: ${name}_
+
+<<: !include feit_dimmer_template.yaml

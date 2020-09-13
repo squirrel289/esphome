@@ -1,0 +1,6 @@
+substitutions:
+  name: sydney_room_chandelier
+  label: Sydney's Room Chandelier
+  id_prefix: ${name}_
+
+<<: !include feit_dimmer_template.yaml
