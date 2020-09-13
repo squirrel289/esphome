@@ -1,0 +1,6 @@
+substitutions:
+  name: kitchen_chandelier
+  id_prefix: ${name}_
+  label: Kitchen Chandelier
+
+<<: !include feit_dimmer_template.yaml
