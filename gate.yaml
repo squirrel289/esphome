@@ -20,7 +20,9 @@ substitutions:
 <<: !include .shared.yaml
 
 esp32_ble_tracker:
-  scan_interval: 30s
+  scan_parameters:
+    interval: 150ms
+    window: 150ms
 
 switch:
 - id: ${id_prefix}open
@@ -73,6 +75,18 @@ binary_sensor:
   on_release:
   - switch.turn_off: ${id_prefix}open
 
+# Detect when the Chris's phone bluetooth is on and within range
+- id: chris_phone
+  platform: ble_presence
+  mac_address: !secret chris_phone_ble
+  name: Chris's Phone
+  # Open the gate when the bluetooth signal is detected
+  on_press:
+  - switch.turn_on: ${id_prefix}open
+  # Close the gate when the bluetooth signal is lost
+  on_release:
+  - switch.turn_off: ${id_prefix}open
+
 sensor:
 - id: odyssey_rssi
   platform: ble_rssi
@@ -82,6 +96,11 @@ sensor:
 - id: m3_rssi
   platform: ble_rssi
   mac_address: !secret m3_ble
+  internal: true
+
+- id: chris_phone_rssi
+  platform: ble_rssi
+  mac_address: !secret chris_phone_ble
   internal: true
 
 cover:
@@ -95,10 +114,6 @@ cover:
     else {
       return COVER_CLOSED;
     }
-#    else if(id(${id_prefix}closed_sensor).state) {
-#      return COVER_CLOSED;
-#    }
-#      return {};
   optimistic: true
   open_action:
   - switch.turn_on: ${id_prefix}open

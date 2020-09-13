@@ -19,7 +19,9 @@ esphome:
 <<: !include .shared.yaml
 
 esp32_ble_tracker:
-  scan_interval: 30s
+  scan_parameters:
+    interval: 150ms
+    window: 150ms
 
 binary_sensor:
 - platform: gpio
@@ -85,7 +87,7 @@ cover:
         binary_sensor.is_on: closed_sensor
       then: 
       - switch.turn_on: open_switch
-      - delay: 20ms
+      - delay: 200ms
       - switch.turn_off: open_switch
   close_action:
   - if:
@@ -93,9 +95,9 @@ cover:
         binary_sensor.is_on: open_sensor
       then: 
       - switch.turn_on: open_switch
-      - delay: 20ms
+      - delay: 200ms
       - switch.turn_off: open_switch
   stop_action:
   - switch.turn_on: open_switch
-  - delay: 20ms
+  - delay: 200ms
   - switch.turn_off: open_switch

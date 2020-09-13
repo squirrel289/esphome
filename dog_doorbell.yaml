@@ -1,0 +1,18 @@
+substitutions:
+  name: dog_doorbell
+  id_prefix: ${name}_
+  label: Dog Doorbell
+  device_ip: 192.168.1.90
+
+esphome:
+  name: ${name}
+  platform: ESP8266
+  board: huzzah
+
+<<: !include .shared.yaml
+
+binary_sensor:
+  - platform: gpio
+    name: "Dog Doorbell Sensor"
+    pin:
+      number: A0

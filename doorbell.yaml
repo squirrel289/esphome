@@ -1,0 +1,25 @@
+substitutions:
+  name: dog_doorbell
+  id_prefix: ${name}_
+  label: Dog Doorbell
+  device_ip: 192.168.1.144
+
+esphome:
+  name: ${name}
+  platform: ESP8266
+  board: huzzah
+
+<<: !include .shared.yaml
+sensor:
+  - platform: adc
+    pin: A0
+    name: "Bell Ringing"
+    update_interval: 1s
+    accuracy_decimals: 2
+    on_value_range:
+      below: .4
+      then:
+        - lambda: id(${name}).publish_state(true);
+binary_sensor:
+  - platform: template
+    id: ${name}
